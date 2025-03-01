@@ -11,11 +11,18 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as EventStreamImport } from './routes/event-stream'
 import { Route as IndexImport } from './routes/index'
 import { Route as DemoTanstackQueryImport } from './routes/demo.tanstack-query'
 import { Route as DemoFormImport } from './routes/demo.form'
 
 // Create/Update Routes
+
+const EventStreamRoute = EventStreamImport.update({
+  id: '/event-stream',
+  path: '/event-stream',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -46,6 +53,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/event-stream': {
+      id: '/event-stream'
+      path: '/event-stream'
+      fullPath: '/event-stream'
+      preLoaderRoute: typeof EventStreamImport
+      parentRoute: typeof rootRoute
+    }
     '/demo/form': {
       id: '/demo/form'
       path: '/demo/form'
@@ -67,12 +81,14 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/event-stream': typeof EventStreamRoute
   '/demo/form': typeof DemoFormRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/event-stream': typeof EventStreamRoute
   '/demo/form': typeof DemoFormRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
@@ -80,27 +96,30 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/event-stream': typeof EventStreamRoute
   '/demo/form': typeof DemoFormRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo/form' | '/demo/tanstack-query'
+  fullPaths: '/' | '/event-stream' | '/demo/form' | '/demo/tanstack-query'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo/form' | '/demo/tanstack-query'
-  id: '__root__' | '/' | '/demo/form' | '/demo/tanstack-query'
+  to: '/' | '/event-stream' | '/demo/form' | '/demo/tanstack-query'
+  id: '__root__' | '/' | '/event-stream' | '/demo/form' | '/demo/tanstack-query'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EventStreamRoute: typeof EventStreamRoute
   DemoFormRoute: typeof DemoFormRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EventStreamRoute: EventStreamRoute,
   DemoFormRoute: DemoFormRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
 }
@@ -116,12 +135,16 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/event-stream",
         "/demo/form",
         "/demo/tanstack-query"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/event-stream": {
+      "filePath": "event-stream.tsx"
     },
     "/demo/form": {
       "filePath": "demo.form.tsx"
