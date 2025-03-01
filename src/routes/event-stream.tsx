@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/event-stream")({
   component: RouteComponent,
@@ -13,7 +13,6 @@ interface EventData {
 }
 
 const useEventSource = (url: string) => {
-  const [data, setData] = useState<EventData[]>([]);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -21,39 +20,34 @@ const useEventSource = (url: string) => {
 
     eventSource.addEventListener("UPDATE", (event) => {
       const newData = JSON.parse(event.data) as EventData;
-      queryClient.setQueryData<EventData[]>(["events"], (oldData = []) => [
-        newData,
-        ...oldData,
-      ]);
+      queryClient.setQueryData<EventData[]>(["events"], (oldData = []) =>
+        [newData, ...oldData].slice(0, 5),
+      );
       console.log("Event received:", newData);
-      setData((prev) => [newData, ...prev].slice(0, 10)); // Keep last 10 events
     });
 
     eventSource.onerror = (error) => {
       console.error("EventSource error:", error);
-      // Attempt to reconnect after a short delay
-      // setTimeout(() => {
-      //   eventSource.close();
-      //   // The browser will automatically attempt to reconnect
-      // }, 3000);
-      eventSource.close();
+
+      // Giving the browser a few seconds to attempt reconnection
+      setTimeout(() => {
+        eventSource.close();
+      }, 3000);
     };
 
     return () => {
       eventSource.close();
     };
   }, [url]);
-
-  return { data };
 };
 
 const apiStreamUrl = "http://localhost:8090/api/events";
-const apiUrl = "http://localhost:8090/api/initial";
+const apiUrl = "http://localhost:8090/api/latest";
 
 function RouteComponent() {
   const {
     data: events,
-    isLoading: isInitialDataLoading,
+    isLoading,
     isError,
     error,
   } = useQuery<EventData[]>({
@@ -62,19 +56,19 @@ function RouteComponent() {
       const response = await fetch(apiUrl);
       return response.json();
     },
-    // Only fetch this once at the beginning
-    staleTime: Infinity,
+    staleTime: 5000,
+    refetchInterval: 5000,
   });
 
   useEventSource(apiStreamUrl);
 
-  if (isInitialDataLoading) {
-    return <div>Loading initial data...</div>;
+  if (isLoading) {
+    return <div>Loading latest data...</div>;
   }
 
   if (isError) {
-    console.error("Error loading initial data:", error);
-    return <div>Error loading initial data</div>;
+    console.error("Error loading latest data:", error);
+    return <div>Error loading latest data</div>;
   }
 
   return (
