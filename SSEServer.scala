@@ -21,7 +21,7 @@ object SseServer extends ZIOAppDefault:
   val eventStream =
     ZStream
       .tick(2.second)
-      .zipWith(ZStream.range(1, 10))((_, n) =>
+      .zipWith(ZStream.range(1, 20))((_, n) =>
         Payload(n, s"Update #$n", LocalDateTime.now().toString)
       )
 
@@ -44,7 +44,7 @@ object SseServer extends ZIOAppDefault:
     )
 
   val initialPayload =
-    Payload(0, "Initial message", LocalDateTime.now().toString)
+    List(Payload(0, "Initial message", LocalDateTime.now().toString))
 
   val initialRoute = Method.GET / "api" / "initial" -> handler(
     Response(
