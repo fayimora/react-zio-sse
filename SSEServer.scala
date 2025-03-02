@@ -3,12 +3,10 @@
 //> using dep dev.zio::zio-http::3.0.1
 //> using dep dev.zio::zio-json::0.7.36
 //> using dep dev.zio::zio-streams::2.1.16
-//> using dep dev.zio::zio-schema::1.6.3
 //> using dep dev.zio::zio::2.1.16
 import java.time.LocalDateTime
 import zio.*
 import zio.http.*
-import zio.http.codec.TextBinaryCodec.fromSchema
 import zio.json.*
 import zio.stream.*
 
@@ -16,12 +14,13 @@ object SseServer extends ZIOAppDefault:
   case class Payload(id: Int, message: String, timestamp: String)
       derives JsonCodec
 
-  val MaxEvents = 1000
+  val MaxEvents = 10000
   val program =
     for
       recentEventsRef <- Ref.make(List.empty[Payload])
       counterRef      <- Ref.make(0)
       hub             <- Hub.bounded[Payload](MaxEvents)
+
       // Start the event generator in the background
       _ <- ZStream
         .tick(5.second)
@@ -42,7 +41,7 @@ object SseServer extends ZIOAppDefault:
         .fork
 
       sseRoute = Method.GET / "api" / "events" -> handler { (req: Request) =>
-        for {
+        for
           // Subscribe to the hub to get a stream of events
           dequeue <- hub.subscribe
           stream = ZStream.fromQueueWithShutdown(dequeue)
@@ -56,38 +55,25 @@ object SseServer extends ZIOAppDefault:
               retry = Some(500)
             )
           )
-        } yield Response(
-          status = Status.Ok,
-          headers = Headers(
-            Header.ContentType(MediaType.text.`event-stream`),
-            Header.CacheControl.NoCache
-          ),
-          body = Body.fromStream(sseEvents.map(_.encode))
-        )
+        yield Response
+          .fromServerSentEvents(sseEvents)
+          .addHeader(Header.CacheControl.NoCache)
+
       }
 
-      // Define the latest data route
+      // the latest(most recent) data route
       latestDataRoute = Method.GET / "api" / "latest" -> handler {
         (req: Request) =>
-          for {
-            recentEvents <- recentEventsRef.get
-            response = Response
-              .json(recentEvents.toJson)
-              .addHeader(Header.AccessControlAllowOrigin.All)
-          } yield response
+          recentEventsRef.get.map(recentEvents =>
+            Response.json(recentEvents.toJson)
+          )
       }
 
       countRoute = Method.GET / "api" / "count" -> handler { (req: Request) =>
-        for {
-          counter <- counterRef.get
-          response = Response(
-            status = Status.Ok,
-            body = Body.fromString(counter.toString)
-          )
-        } yield response
+        counterRef.get.map(counter => Response.json(counter.toString))
       }
 
-      rootRoute = Method.GET / Root -> handler(Response(status = Status.Ok))
+      rootRoute = Method.GET / Root -> handler(Response.text("Ok"))
 
       httpApp = Routes(
         sseRoute,
