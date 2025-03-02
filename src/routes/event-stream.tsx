@@ -41,8 +41,8 @@ const useEventSource = (url: string) => {
   }, [url]);
 };
 
-const apiStreamUrl = "http://localhost:8090/api/events";
-const apiUrl = "http://localhost:8090/api/latest";
+const apiStreamUrl = `${import.meta.env.VITE_API_URL}/api/events`;
+const apiUrl = `${import.meta.env.VITE_API_URL}/api/latest`;
 
 function RouteComponent() {
   const {
@@ -59,6 +59,9 @@ function RouteComponent() {
     staleTime: 5000,
     refetchInterval: 5000,
   });
+
+  console.log("apiStreamUrl", apiStreamUrl);
+  console.log("apiUrl", apiUrl);
 
   useEventSource(apiStreamUrl);
 
