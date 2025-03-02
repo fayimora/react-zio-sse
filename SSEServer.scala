@@ -87,10 +87,13 @@ object SseServer extends ZIOAppDefault:
         } yield response
       }
 
+      rootRoute = Method.GET / Root -> handler(Response(status = Status.Ok))
+
       httpApp = Routes(
         sseRoute,
         latestDataRoute,
-        countRoute
+        countRoute,
+        rootRoute
       ) @@ Middleware.cors
       _ <- Server
         .serve(httpApp)

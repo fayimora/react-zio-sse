@@ -7,3 +7,4 @@ dist-ssr
 .metals/
 .vscode/
 .scala-build/
+.env*
